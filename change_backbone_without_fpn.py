@@ -45,20 +45,22 @@ def create_model(num_classes):
                                                     output_size=[7, 7],  # RoIAlign pooling输出特征矩阵尺寸
                                                     sampling_ratio=2)  # 采样率
 
-    model = FasterRCNN(backbone=backbone,
-                       num_classes=num_classes,
-                       rpn_anchor_generator=anchor_generator,
-                       box_roi_pool=roi_pooler)
-
-    return model
+    return FasterRCNN(
+        backbone=backbone,
+        num_classes=num_classes,
+        rpn_anchor_generator=anchor_generator,
+        box_roi_pool=roi_pooler,
+    )
 
 
 def main(parser_data):
     device = torch.device(parser_data.device if torch.cuda.is_available() else "cpu")
-    print("Using {} device training.".format(device.type))
+    print(f"Using {device.type} device training.")
 
     # 用来保存coco_info的文件
-    results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    results_file = (
+        f'results{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
+    )
 
     data_transform = {
         "train": transforms.Compose([transforms.ToTensor(),
@@ -69,7 +71,7 @@ def main(parser_data):
     VOC_root = parser_data.data_path
     # check voc root
     if os.path.exists(os.path.join(VOC_root, "VOCdevkit")) is False:
-        raise FileNotFoundError("VOCdevkit dose not in path:'{}'.".format(VOC_root))
+        raise FileNotFoundError(f"VOCdevkit dose not in path:'{VOC_root}'.")
 
     # load train data set
     # VOCdevkit -> VOC2012 -> ImageSets -> Main -> train.txt
@@ -141,7 +143,7 @@ def main(parser_data):
         parser_data.start_epoch = checkpoint['epoch'] + 1
         if args.amp and "scaler" in checkpoint:
             scaler.load_state_dict(checkpoint["scaler"])
-        print("the training process from epoch{}...".format(parser_data.start_epoch))
+        print(f"the training process from epoch{parser_data.start_epoch}...")
 
     train_loss = []
     learning_rate = []
@@ -166,7 +168,7 @@ def main(parser_data):
         with open(results_file, "a") as f:
             # 写入的数据包括coco指标还有loss和learning rate
             result_info = [str(round(i, 4)) for i in coco_info + [mean_loss.item()]] + [str(round(lr, 6))]
-            txt = "epoch:{} {}".format(epoch, '  '.join(result_info))
+            txt = f"epoch:{epoch} {'  '.join(result_info)}"
             f.write(txt + "\n")
 
         val_map.append(coco_info[1])  # pascal mAP
@@ -179,15 +181,15 @@ def main(parser_data):
             'epoch': epoch}
         if args.amp:
             save_files["scaler"] = scaler.state_dict()
-        torch.save(save_files, "./save_weights/resNetFpn-model-{}.pth".format(epoch))
+        torch.save(save_files, f"./save_weights/resNetFpn-model-{epoch}.pth")
 
     # plot loss and lr curve
-    if len(train_loss) != 0 and len(learning_rate) != 0:
+    if train_loss and learning_rate:
         from plot_curve import plot_loss_and_lr
         plot_loss_and_lr(train_loss, learning_rate)
 
     # plot mAP curve
-    if len(val_map) != 0:
+    if val_map:
         from plot_curve import plot_map
         plot_map(val_map)
 

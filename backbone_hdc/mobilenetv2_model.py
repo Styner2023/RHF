@@ -54,10 +54,7 @@ class InvertedResidual(nn.Module):
         self.conv = nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.use_shortcut:
-            return x + self.conv(x)
-        else:
-            return self.conv(x)
+        return x + self.conv(x) if self.use_shortcut else self.conv(x)
 
 
 class MobileNetV2(nn.Module):
@@ -81,9 +78,7 @@ class MobileNetV2(nn.Module):
             [6, 320, 1, 1],
         ]
 
-        features = []
-        # conv1 layer
-        features.append(ConvBNReLU(3, input_channel, stride=2, norm_layer=norm_layer))
+        features = [ConvBNReLU(3, input_channel, stride=2, norm_layer=norm_layer)]
         # building inverted residual residual blockes
         for t, c, n, s in inverted_residual_setting:
             output_channel = _make_divisible(c * alpha, round_nearest)

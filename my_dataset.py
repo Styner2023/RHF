@@ -17,24 +17,25 @@ class maskDetectionDataset(Dataset):
 
         # read train.txt or valid.txt file
         txt_path = os.path.join(self.root, txt_name)
-        assert os.path.exists(txt_path), "not found {} file.".format(txt_path)
+        assert os.path.exists(txt_path), f"not found {txt_path} file."
 
         with open(txt_path) as read:
-            self.xml_list = [os.path.join(self.annotations_root, line.strip() + ".xml")
-                             for line in read.readlines() if len(line.strip()) > 0]
+            self.xml_list = [
+                os.path.join(self.annotations_root, f"{line.strip()}.xml")
+                for line in read.readlines()
+                if len(line.strip()) > 0
+            ]
 
         # check file
-        assert len(self.xml_list) > 0, "in '{}' file does not find any information.".format(txt_path)
+        assert self.xml_list, f"in '{txt_path}' file does not find any information."
         for xml_path in self.xml_list:
-            assert os.path.exists(xml_path), "not found '{}' file.".format(xml_path)
+            assert os.path.exists(xml_path), f"not found '{xml_path}' file."
 
         # read class_indict
         json_file = './classes.json'
-        assert os.path.exists(json_file), "{} file not exist.".format(json_file)
-        json_file = open(json_file, 'r')
-        self.class_dict = json.load(json_file)
-        json_file.close()
-
+        assert os.path.exists(json_file), f"{json_file} file not exist."
+        with open(json_file, 'r') as json_file:
+            self.class_dict = json.load(json_file)
         self.transforms = transforms
 
     def __len__(self):
@@ -50,12 +51,12 @@ class maskDetectionDataset(Dataset):
         img_path = os.path.join(self.img_root, data["filename"])
         image = Image.open(img_path)
         if image.format not in ["JPEG", "JPG"]:
-            raise ValueError("Image '{}' format not JPEG/JPG".format(img_path))
+            raise ValueError(f"Image '{img_path}' format not JPEG/JPG")
 
         boxes = []
         labels = []
         iscrowd = []
-        assert "object" in data, "{} lack of object information.".format(xml_path)
+        assert "object" in data, f"{xml_path} lack of object information."
         for obj in data["object"]:
             xmin = float(obj["bndbox"]["xmin"])
             xmax = float(obj["bndbox"]["xmax"])
@@ -64,7 +65,7 @@ class maskDetectionDataset(Dataset):
 
             # 进一步检查数据，有的标注信息中可能有w或h为0的情况，这样的数据会导致计算回归loss为nan
             if xmax <= xmin or ymax <= ymin:
-                print("Warning: in '{}' xml, there are some bbox w/h <=0".format(xml_path))
+                print(f"Warning: in '{xml_path}' xml, there are some bbox w/h <=0")
                 continue
 
             boxes.append([xmin, ymin, xmax, ymax])
@@ -81,13 +82,13 @@ class maskDetectionDataset(Dataset):
         image_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
-        target = {}
-        target["boxes"] = boxes
-        target["labels"] = labels
-        target["image_id"] = image_id
-        target["area"] = area
-        target["iscrowd"] = iscrowd
-
+        target = {
+            "boxes": boxes,
+            "labels": labels,
+            "image_id": image_id,
+            "area": area,
+            "iscrowd": iscrowd,
+        }
         if self.transforms is not None:
             image, target = self.transforms(image, target)
 
@@ -168,13 +169,13 @@ class maskDetectionDataset(Dataset):
         image_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
-        target = {}
-        target["boxes"] = boxes
-        target["labels"] = labels
-        target["image_id"] = image_id
-        target["area"] = area
-        target["iscrowd"] = iscrowd
-
+        target = {
+            "boxes": boxes,
+            "labels": labels,
+            "image_id": image_id,
+            "area": area,
+            "iscrowd": iscrowd,
+        }
         return (data_height, data_width), target
 
     @staticmethod

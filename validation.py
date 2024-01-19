@@ -54,16 +54,8 @@ def summarize(self, catId=None):
                 t = np.where(iouThr == p.iouThrs)[0]
                 s = s[t]
 
-            if isinstance(catId, int):
-                s = s[:, catId, aind, mind]
-            else:
-                s = s[:, :, aind, mind]
-
-        if len(s[s > -1]) == 0:
-            mean_s = -1
-        else:
-            mean_s = np.mean(s[s > -1])
-
+            s = s[:, catId, aind, mind] if isinstance(catId, int) else s[:, :, aind, mind]
+        mean_s = -1 if len(s[s > -1]) == 0 else np.mean(s[s > -1])
         print_string = iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s)
         return mean_s, print_string
 
@@ -91,7 +83,7 @@ def summarize(self, catId=None):
 
 def main(parser_data):
     device = torch.device(parser_data.device if torch.cuda.is_available() else "cpu")
-    print("Using {} device training.".format(device.type))
+    print(f"Using {device.type} device training.")
 
     data_transform = {
         "valid": transforms.Compose([transforms.ToTensor()])
@@ -99,16 +91,17 @@ def main(parser_data):
 
     # read class_indict
     label_json_path = './classes.json'
-    assert os.path.exists(label_json_path), "json file {} dose not exist.".format(label_json_path)
-    json_file = open(label_json_path, 'r')
-    class_dict = json.load(json_file)
-    json_file.close()
+    assert os.path.exists(
+        label_json_path
+    ), f"json file {label_json_path} dose not exist."
+    with open(label_json_path, 'r') as json_file:
+        class_dict = json.load(json_file)
     category_index = {v: k for k, v in class_dict.items()}
 
     VOC_root = parser_data.data_path
     # check voc root
     if os.path.exists(os.path.join(VOC_root, "JPEGImages")) is False:
-        raise FileNotFoundError("JPEGImages dose not in path:'{}'.".format(VOC_root))
+        raise FileNotFoundError(f"JPEGImages dose not in path:'{VOC_root}'.")
 
     # 注意这里的collate_fn是自定义的，因为读取的数据包括image和targets，不能直接使用默认的方法合成batch
     batch_size = parser_data.batch_size
@@ -131,7 +124,7 @@ def main(parser_data):
 
     # 载入你自己训练好的模型权重
     weights_path = parser_data.weights
-    assert os.path.exists(weights_path), "not found {} file.".format(weights_path)
+    assert os.path.exists(weights_path), f"not found {weights_path} file."
     model.load_state_dict(torch.load(weights_path, map_location=device)['model'])
     # print(model)
 
@@ -147,7 +140,7 @@ def main(parser_data):
     with torch.no_grad():
         for image, targets in tqdm(val_dataset_loader, desc="validation..."):
             # 将图片传入指定设备device
-            image = list(img.to(device) for img in image)
+            image = [img.to(device) for img in image]
 
             # inference
             outputs = model(image)

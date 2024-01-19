@@ -24,7 +24,7 @@ def check_annotations(root):
                     poor_mask.append(xml.split('.')[0])
                 if sub.text == "none_mask":
                     none_mask.append(xml.split('.')[0])
-    print("num of all_annotations: ", str(all_annotations))
+    print("num of all_annotations: ", all_annotations)
     print("num of with_mask: ", len(with_mask))
     print("num of poor_mask: ", len(poor_mask))
     print("num of none_mask: ", len(none_mask))
@@ -47,27 +47,27 @@ def check_datasets(root):
     # addition_jpgs : 没有相应标签的图片列表
     addition_jpgs = [y for y in jpgs if y not in xmls]
     for i in range(0, len(addition_jpgs)):
-        addition_jpgs[i] = addition_jpgs[i] + ".jpg"
+        addition_jpgs[i] = f"{addition_jpgs[i]}.jpg"
     # 删除多余文件
     for i in addition_jpgs:
         os.remove(os.path.join(os.getcwd(), os.path.join(jpg_path, i)))
-    print("已删除%s个多余的标签文件" % len(addition_jpgs))
+    print(f"已删除{len(addition_jpgs)}个多余的标签文件")
     # addition_xmls : 没有相应图片的标签列表
     addition_xmls = [y for y in xmls if y not in jpgs]
     for i in range(0, len(addition_xmls)):
-        addition_xmls[i] = addition_xmls[i] + ".xml"
+        addition_xmls[i] = f"{addition_xmls[i]}.xml"
     # 删除多余文件
     for i in addition_xmls:
         os.remove(os.path.join(os.getcwd(), os.path.join(xml_path, i)))
-    print("已删除%s个多余的图片文件" % len(addition_xmls))
+    print(f"已删除{len(addition_xmls)}个多余的图片文件")
     print("标签与图片数量相等")
     print("addition_jpgs : ", end='')
     print(addition_jpgs)
     print("addition_xmls : ", end='')
     print(addition_xmls)
-    print("共有%s个文件相同" % (len(common)))
-    print("共有%s个jpg文件不同" % (len(addition_jpgs)))
-    print("共有%s个xml文件不同" % (len(addition_xmls)))
+    print(f"共有{len(common)}个文件相同")
+    print(f"共有{len(addition_jpgs)}个jpg文件不同")
+    print(f"共有{len(addition_xmls)}个xml文件不同")
 
 
 def check_format(root):

@@ -53,15 +53,13 @@ class FeaturePyramidNetwork(nn.Module):
         This is equivalent to self.inner_blocks[idx](x),
         but torchscript doesn't support this yet
         """
-        num_blocks = len(self.inner_blocks)
         if idx < 0:
+            num_blocks = len(self.inner_blocks)
             idx += num_blocks
-        i = 0
         out = x
-        for module in self.inner_blocks:
+        for i, module in enumerate(self.inner_blocks):
             if i == idx:
                 out = module(x)
-            i += 1
         return out
 
     def get_result_from_layer_blocks(self, x: Tensor, idx: int) -> Tensor:
@@ -69,15 +67,13 @@ class FeaturePyramidNetwork(nn.Module):
         This is equivalent to self.layer_blocks[idx](x),
         but torchscript doesn't support this yet
         """
-        num_blocks = len(self.layer_blocks)
         if idx < 0:
+            num_blocks = len(self.layer_blocks)
             idx += num_blocks
-        i = 0
         out = x
-        for module in self.layer_blocks:
+        for i, module in enumerate(self.layer_blocks):
             if i == idx:
                 out = module(x)
-            i += 1
         return out
 
     def forward(self, x: Dict[str, Tensor]) -> Dict[str, Tensor]:
@@ -97,11 +93,7 @@ class FeaturePyramidNetwork(nn.Module):
         # last_inner = self.inner_blocks[-1](x[-1])
         last_inner = self.get_result_from_inner_blocks(x[-1], -1)
         # result中保存着每个预测特征层
-        results = []
-        # 将layer4调整channel后的特征矩阵，通过3x3卷积后得到对应的预测特征矩阵
-        # results.append(self.layer_blocks[-1](last_inner))
-        results.append(self.get_result_from_layer_blocks(last_inner, -1))
-
+        results = [self.get_result_from_layer_blocks(last_inner, -1)]
         for idx in range(len(x) - 2, -1, -1):
             inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)
             feat_shape = inner_lateral.shape[-2:]
@@ -113,10 +105,7 @@ class FeaturePyramidNetwork(nn.Module):
         if self.extra_blocks is not None:
             results, names = self.extra_blocks(results, x, names)
 
-        # make it back an OrderedDict
-        out = OrderedDict([(k, v) for k, v in zip(names, results)])
-
-        return out
+        return OrderedDict(list(zip(names, results)))
 
 
 class LastLevelMaxPool(torch.nn.Module):

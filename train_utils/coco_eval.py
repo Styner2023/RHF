@@ -52,7 +52,7 @@ class CocoEvaluator(object):
 
     def summarize(self):
         for iou_type, coco_eval in self.coco_eval.items():
-            print("IoU metric: {}".format(iou_type))
+            print(f"IoU metric: {iou_type}")
             coco_eval.summarize()
 
     def prepare(self, predictions, iou_type):
@@ -63,7 +63,7 @@ class CocoEvaluator(object):
         elif iou_type == "keypoints":
             return self.prepare_for_coco_keypoint(predictions)
         else:
-            raise ValueError("Unknown iou type {}".format(iou_type))
+            raise ValueError(f"Unknown iou type {iou_type}")
 
     def prepare_for_coco_detection(self, predictions):
         coco_results = []
@@ -164,10 +164,7 @@ def merge(img_ids, eval_imgs):
     for p in all_img_ids:
         merged_img_ids.extend(p)
 
-    merged_eval_imgs = []
-    for p in all_eval_imgs:
-        merged_eval_imgs.append(p)
-
+    merged_eval_imgs = list(all_eval_imgs)
     merged_img_ids = np.array(merged_img_ids)
     merged_eval_imgs = np.concatenate(merged_eval_imgs, 2)
 
@@ -238,7 +235,7 @@ def loadRes(self, resFile):
     :return: res (obj)         : result api object
     """
     res = COCO()
-    res.dataset['images'] = [img for img in self.dataset['images']]
+    res.dataset['images'] = list(self.dataset['images'])
 
     # print('Loading and preparing results...')
     # tic = time.time()
@@ -253,11 +250,13 @@ def loadRes(self, resFile):
     assert set(annsImgIds) == (set(annsImgIds) & set(self.getImgIds())), \
         'Results do not correspond to current coco set'
     if 'caption' in anns[0]:
-        imgIds = set([img['id'] for img in res.dataset['images']]) & set([ann['image_id'] for ann in anns])
+        imgIds = {img['id'] for img in res.dataset['images']} & {
+            ann['image_id'] for ann in anns
+        }
         res.dataset['images'] = [img for img in res.dataset['images'] if img['id'] in imgIds]
         for id, ann in enumerate(anns):
             ann['id'] = id + 1
-    elif 'bbox' in anns[0] and not anns[0]['bbox'] == []:
+    elif 'bbox' in anns[0] and anns[0]['bbox'] != []:
         res.dataset['categories'] = copy.deepcopy(self.dataset['categories'])
         for id, ann in enumerate(anns):
             bb = ann['bbox']
@@ -280,7 +279,7 @@ def loadRes(self, resFile):
         res.dataset['categories'] = copy.deepcopy(self.dataset['categories'])
         for id, ann in enumerate(anns):
             s = ann['keypoints']
-            x = s[0::3]
+            x = s[::3]
             y = s[1::3]
             x1, x2, y1, y2 = np.min(x), np.max(x), np.min(y), np.max(y)
             ann['area'] = (x2 - x1) * (y2 - y1)
@@ -304,7 +303,7 @@ def evaluate(self):
     # add backward compatibility if useSegm is specified in params
     if p.useSegm is not None:
         p.iouType = 'segm' if p.useSegm == 1 else 'bbox'
-        print('useSegm (deprecated) is not None. Running {} evaluation'.format(p.iouType))
+        print(f'useSegm (deprecated) is not None. Running {p.iouType} evaluation')
     # print('Evaluate annotation type *{}*'.format(p.iouType))
     p.imgIds = list(np.unique(p.imgIds))
     if p.useCats:
@@ -316,7 +315,7 @@ def evaluate(self):
     # loop through images, area range, max detection number
     catIds = p.catIds if p.useCats else [-1]
 
-    if p.iouType == 'segm' or p.iouType == 'bbox':
+    if p.iouType in ['segm', 'bbox']:
         computeIoU = self.computeIoU
     elif p.iouType == 'keypoints':
         computeIoU = self.computeOks

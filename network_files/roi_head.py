@@ -161,7 +161,7 @@ class RoIHeads(torch.nn.Module):
         sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)
         sampled_inds = []
         # 遍历每张图片的正负样本索引
-        for img_idx, (pos_inds_img, neg_inds_img) in enumerate(zip(sampled_pos_inds, sampled_neg_inds)):
+        for pos_inds_img, neg_inds_img in zip(sampled_pos_inds, sampled_neg_inds):
             # 记录所有采集样本索引（包括正样本和负样本）
             # img_sampled_inds = torch.nonzero(pos_inds_img | neg_inds_img).squeeze(1)
             img_sampled_inds = torch.where(pos_inds_img | neg_inds_img)[0]
@@ -188,8 +188,8 @@ class RoIHeads(torch.nn.Module):
     def check_targets(self, targets):
         # type: (Optional[List[Dict[str, Tensor]]]) -> None
         assert targets is not None
-        assert all(["boxes" in t for t in targets])
-        assert all(["labels" in t for t in targets])
+        assert all("boxes" in t for t in targets)
+        assert all("labels" in t for t in targets)
 
     def select_training_samples(self,
                                 proposals,  # type: List[Tensor]

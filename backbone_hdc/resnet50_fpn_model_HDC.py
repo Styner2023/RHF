@@ -91,15 +91,16 @@ class ResNet(nn.Module):
         self.include_top = include_top
         self.in_channel = 64
         self.dilation = 1
-        
+
         # 检测混合膨胀率
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
             # the 2x2 stride with a dilated convolution instead
             replace_stride_with_dilation = [False, False, False]
         if len(replace_stride_with_dilation) != 3:
-            raise ValueError("replace_stride_with_dilation should be None "
-                             "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+            raise ValueError(
+                f"replace_stride_with_dilation should be None or a 3-element tuple, got {replace_stride_with_dilation}"
+            )
 
         self.conv1 = nn.Conv2d(3, self.in_channel, kernel_size=7, stride=2, padding=3,
                                bias=False)
@@ -146,12 +147,26 @@ class ResNet(nn.Module):
                 nn.Conv2d(self.in_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
                 norm_layer(channel * block.expansion))
 
-        layers = []
-        layers.append(block(self.in_channel, channel, downsample=downsample, stride=stride, dilation=previous_dilation, norm_layer=norm_layer))
+        layers = [
+            block(
+                self.in_channel,
+                channel,
+                downsample=downsample,
+                stride=stride,
+                dilation=previous_dilation,
+                norm_layer=norm_layer,
+            )
+        ]
         self.in_channel = channel * block.expansion
-        for _ in range(1, block_num):
-            layers.append(block(self.in_channel, channel, dilation=self.dilation, norm_layer=norm_layer))
-            
+        layers.extend(
+            block(
+                self.in_channel,
+                channel,
+                dilation=self.dilation,
+                norm_layer=norm_layer,
+            )
+            for _ in range(1, block_num)
+        )
         return nn.Sequential(*layers)
 
 
@@ -396,7 +411,7 @@ def resnet50_fpn_backbone(pretrain_path="",
         overwrite_eps(resnet_backbone, 0.0)
 
     if pretrain_path != "":
-        assert os.path.exists(pretrain_path), "{} is not exist.".format(pretrain_path)
+        assert os.path.exists(pretrain_path), f"{pretrain_path} is not exist."
         # 载入预训练权重
         print(resnet_backbone.load_state_dict(torch.load(pretrain_path), strict=False))
 
@@ -411,7 +426,7 @@ def resnet50_fpn_backbone(pretrain_path="",
     # freeze layers
     for name, parameter in resnet_backbone.named_parameters():
         # 只训练不在layers_to_train列表中的层结构
-        if all([not name.startswith(layer) for layer in layers_to_train]):
+        if all(not name.startswith(layer) for layer in layers_to_train):
             parameter.requires_grad_(False)
 
     if extra_blocks is None:

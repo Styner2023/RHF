@@ -172,7 +172,7 @@ class AnchorsGenerator(nn.Module):
     def forward(self, image_list, feature_maps):
         # type: (ImageList, List[Tensor]) -> List[Tensor]
         # 获取每个预测特征层的尺寸(height, width)
-        grid_sizes = list([feature_map.shape[-2:] for feature_map in feature_maps])
+        grid_sizes = [feature_map.shape[-2:] for feature_map in feature_maps]
 
         # 获取输入图像的height和width
         image_size = image_list.tensors.shape[-2:]
@@ -194,11 +194,8 @@ class AnchorsGenerator(nn.Module):
 
         anchors = torch.jit.annotate(List[List[torch.Tensor]], [])
         # 遍历一个batch中的每张图像
-        for i, (image_height, image_width) in enumerate(image_list.image_sizes):
-            anchors_in_image = []
-            # 遍历每张预测特征图映射回原图的anchors坐标信息
-            for anchors_per_feature_map in anchors_over_all_feature_maps:
-                anchors_in_image.append(anchors_per_feature_map)
+        for image_height, image_width in image_list.image_sizes:
+            anchors_in_image = list(anchors_over_all_feature_maps)
             anchors.append(anchors_in_image)
         # 将每一张图像的所有预测特征层的anchors坐标信息拼接在一起
         # anchors是个list，每个元素为一张图像的所有anchors信息
@@ -236,7 +233,7 @@ class RPNHead(nn.Module):
         # type: (List[Tensor]) -> Tuple[List[Tensor], List[Tensor]]
         logits = []
         bbox_reg = []
-        for i, feature in enumerate(x):
+        for feature in x:
             t = F.relu(self.conv(feature))
             logits.append(self.cls_logits(t))
             bbox_reg.append(self.bbox_pred(t))
