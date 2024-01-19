@@ -133,8 +133,7 @@ def encode_boxes(reference_boxes, proposals, weights):
     targets_dw = ww * torch.log(gt_widths / ex_widths)
     targets_dh = wh * torch.log(gt_heights / ex_heights)
 
-    targets = torch.cat((targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
-    return targets
+    return torch.cat((targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
 
 
 class BoxCoder(object):
@@ -186,9 +185,7 @@ class BoxCoder(object):
         dtype = reference_boxes.dtype
         device = reference_boxes.device
         weights = torch.as_tensor(self.weights, dtype=dtype, device=device)
-        targets = encode_boxes(reference_boxes, proposals, weights)
-
-        return targets
+        return encode_boxes(reference_boxes, proposals, weights)
 
     def decode(self, rel_codes, boxes):
         # type: (Tensor, List[Tensor]) -> Tensor
@@ -206,10 +203,7 @@ class BoxCoder(object):
         boxes_per_image = [b.size(0) for b in boxes]
         concat_boxes = torch.cat(boxes, dim=0)
 
-        box_sum = 0
-        for val in boxes_per_image:
-            box_sum += val
-
+        box_sum = sum(boxes_per_image)
         # 将预测的bbox回归参数应用到对应anchors上得到预测bbox的坐标
         pred_boxes = self.decode_single(
             rel_codes, concat_boxes
@@ -263,8 +257,9 @@ class BoxCoder(object):
         # ymax
         pred_boxes4 = pred_ctr_y + torch.tensor(0.5, dtype=pred_ctr_y.dtype, device=pred_h.device) * pred_h
 
-        pred_boxes = torch.stack((pred_boxes1, pred_boxes2, pred_boxes3, pred_boxes4), dim=2).flatten(1)
-        return pred_boxes
+        return torch.stack(
+            (pred_boxes1, pred_boxes2, pred_boxes3, pred_boxes4), dim=2
+        ).flatten(1)
 
 
 class Matcher(object):
@@ -328,11 +323,7 @@ class Matcher(object):
         # matched_vals代表每列的最大值，即每个anchors与所有gt匹配的最大iou值
         # matches对应最大值所在的索引
         matched_vals, matches = match_quality_matrix.max(dim=0)  # the dimension to reduce.
-        if self.allow_low_quality_matches:
-            all_matches = matches.clone()
-        else:
-            all_matches = None
-
+        all_matches = matches.clone() if self.allow_low_quality_matches else None
         # Assign candidate matches with low quality to negative (unassigned) values
         # 计算iou小于low_threshold的索引
         below_low_threshold = matched_vals < self.low_threshold
@@ -403,6 +394,4 @@ def smooth_l1_loss(input, target, beta: float = 1. / 9, size_average: bool = Tru
     # cond = n < beta
     cond = torch.lt(n, beta)
     loss = torch.where(cond, 0.5 * n ** 2 / beta, n - 0.5 * beta)
-    if size_average:
-        return loss.mean()
-    return loss.sum()
+    return loss.mean() if size_average else loss.sum()

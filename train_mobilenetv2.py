@@ -30,20 +30,22 @@ def create_model(num_classes):
                                                     output_size=[7, 7],   # roi_pooling输出特征矩阵尺寸
                                                     sampling_ratio=2)  # 采样率
 
-    model = FasterRCNN(backbone=backbone,
-                       num_classes=num_classes,
-                       rpn_anchor_generator=anchor_generator,
-                       box_roi_pool=roi_pooler)
-
-    return model
+    return FasterRCNN(
+        backbone=backbone,
+        num_classes=num_classes,
+        rpn_anchor_generator=anchor_generator,
+        box_roi_pool=roi_pooler,
+    )
 
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("Using {} device training.".format(device.type))
+    print(f"Using {device.type} device training.")
 
     # 用来保存coco_info的文件
-    results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    results_file = (
+        f'results{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
+    )
 
     # 检查保存权重文件夹是否存在，不存在则创建
     if not os.path.exists("save_weights"):
@@ -61,7 +63,7 @@ def main():
 
     # check mask data root
     if os.path.exists(os.path.join(mask_root, "")) is False:
-        raise FileNotFoundError("JPEGImages dose not in path:'{}'.".format(mask_root))
+        raise FileNotFoundError(f"JPEGImages dose not in path:'{mask_root}'.")
 
     # load train data set
     train_dataset = maskDetectionDataset(mask_root, data_transform["train"], "train.txt")
@@ -144,7 +146,7 @@ def main():
         with open(results_file, "a") as f:
             # 写入的数据包括coco指标还有loss和learning rate
             result_info = [str(round(i, 4)) for i in coco_info + [mean_loss.item()]] + [str(round(lr, 6))]
-            txt = "epoch:{} {}".format(epoch, '  '.join(result_info))
+            txt = f"epoch:{epoch} {'  '.join(result_info)}"
             f.write(txt + "\n")
 
         val_map.append(coco_info[1])  # pascal mAP
@@ -159,11 +161,7 @@ def main():
     # 冻结backbone部分底层权重
     for name, parameter in model.backbone.named_parameters():
         split_name = name.split(".")[0]
-        if split_name in ["0", "1", "2", "3"]:
-            parameter.requires_grad = False
-        else:
-            parameter.requires_grad = True
-
+        parameter.requires_grad = split_name not in ["0", "1", "2", "3"]
     # define optimizer
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=0.005,
@@ -191,7 +189,7 @@ def main():
         with open(results_file, "a") as f:
             # 写入的数据包括coco指标还有loss和learning rate
             result_info = [str(round(i, 4)) for i in coco_info + [mean_loss.item()]] + [str(round(lr, 6))]
-            txt = "epoch:{} {}".format(epoch, '  '.join(result_info))
+            txt = f"epoch:{epoch} {'  '.join(result_info)}"
             f.write(txt + "\n")
 
         val_map.append(coco_info[1])  # pascal mAP
@@ -204,15 +202,18 @@ def main():
                 'optimizer': optimizer.state_dict(),
                 'lr_scheduler': lr_scheduler.state_dict(),
                 'epoch': epoch}
-            torch.save(save_files, "./save_weights/mobilenetv2-model-NotAugment-{}.pth".format(epoch))
+            torch.save(
+                save_files,
+                f"./save_weights/mobilenetv2-model-NotAugment-{epoch}.pth",
+            )
 
     # plot loss and lr curve
-    if len(train_loss) != 0 and len(learning_rate) != 0:
+    if train_loss and learning_rate:
         from plot_curve import plot_loss_and_lr
         plot_loss_and_lr(train_loss, learning_rate)
 
     # plot mAP curve
-    if len(val_map) != 0:
+    if val_map:
         from plot_curve import plot_map
         plot_map(val_map)
 

@@ -221,7 +221,7 @@ class GeneralizedRCNNTransform(nn.Module):
 
     def __repr__(self):
         """自定义输出实例化对象的信息，可通过print打印实例信息"""
-        format_string = self.__class__.__name__ + '('
+        format_string = f'{self.__class__.__name__}('
         _indent = '\n    '
         format_string += "{0}Normalize(mean={1}, std={2})".format(_indent, self.image_mean, self.image_std)
         format_string += "{0}Resize(min_size={1}, max_size={2}, mode='bilinear')".format(_indent, self.min_size,
@@ -234,14 +234,15 @@ class GeneralizedRCNNTransform(nn.Module):
                 targets=None  # type: Optional[List[Dict[str, Tensor]]]
                 ):
         # type: (...) -> Tuple[ImageList, Optional[List[Dict[str, Tensor]]]]
-        images = [img for img in images]
+        images = list(images)
         for i in range(len(images)):
             image = images[i]
             target_index = targets[i] if targets is not None else None
 
             if image.dim() != 3:
-                raise ValueError("images is expected to be a list of 3d tensors "
-                                 "of shape [C, H, W], got {}".format(image.shape))
+                raise ValueError(
+                    f"images is expected to be a list of 3d tensors of shape [C, H, W], got {image.shape}"
+                )
             image = self.normalize(image)                # 对图像进行标准化处理
             image, target_index = self.resize(image, target_index)   # 对图像和对应的bboxes缩放到指定范围
             images[i] = image

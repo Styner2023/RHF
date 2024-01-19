@@ -90,14 +90,21 @@ class ResNet(nn.Module):
                 nn.Conv2d(self.in_channel, channel * block.expansion, kernel_size=1, stride=stride, bias=False),
                 norm_layer(channel * block.expansion))
 
-        layers = []
-        layers.append(block(self.in_channel, channel, downsample=downsample,
-                            stride=stride, norm_layer=norm_layer))
+        layers = [
+            block(
+                self.in_channel,
+                channel,
+                downsample=downsample,
+                stride=stride,
+                norm_layer=norm_layer,
+            )
+        ]
         self.in_channel = channel * block.expansion
 
-        for _ in range(1, block_num):
-            layers.append(block(self.in_channel, channel, norm_layer=norm_layer))
-
+        layers.extend(
+            block(self.in_channel, channel, norm_layer=norm_layer)
+            for _ in range(1, block_num)
+        )
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -258,7 +265,7 @@ def resnet50_fpn_backbone(pretrain_path="",
         overwrite_eps(resnet_backbone, 0.0)
 
     if pretrain_path != "":
-        assert os.path.exists(pretrain_path), "{} is not exist.".format(pretrain_path)
+        assert os.path.exists(pretrain_path), f"{pretrain_path} is not exist."
         # 载入预训练权重
         print(resnet_backbone.load_state_dict(torch.load(pretrain_path), strict=False))
 
@@ -273,7 +280,7 @@ def resnet50_fpn_backbone(pretrain_path="",
     # freeze layers
     for name, parameter in resnet_backbone.named_parameters():
         # 只训练不在layers_to_train列表中的层结构
-        if all([not name.startswith(layer) for layer in layers_to_train]):
+        if all(not name.startswith(layer) for layer in layers_to_train):
             parameter.requires_grad_(False)
 
     if extra_blocks is None:

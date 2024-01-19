@@ -42,7 +42,9 @@ def main(args):
     device = torch.device(args.device)
 
     # 用来保存coco_info的文件
-    results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    results_file = (
+        f'results{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
+    )
 
     # Data loading code
     print("Loading data")
@@ -56,7 +58,7 @@ def main(args):
     mask_root = args.data_path
     # check mask data root
     if os.path.exists(os.path.join(mask_root, "")) is False:
-        raise FileNotFoundError("JPEGImages dose not in path:'{}'.".format(mask_root))
+        raise FileNotFoundError(f"JPEGImages dose not in path:'{mask_root}'.")
 
     # load train data set
     train_dataset = maskDetectionDataset(mask_root, data_transform["train"], "train.txt")
@@ -154,7 +156,7 @@ def main(args):
             with open(results_file, "a") as f:
                 # 写入的数据包括coco指标还有loss和learning rate
                 result_info = [str(round(i, 4)) for i in coco_info + [mean_loss.item()]] + [str(round(lr, 6))]
-                txt = "epoch:{} {}".format(epoch, '  '.join(result_info))
+                txt = f"epoch:{epoch} {'  '.join(result_info)}"
                 f.write(txt + "\n")
 
         if args.output_dir:
@@ -172,16 +174,16 @@ def main(args):
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-    print('Training time {}'.format(total_time_str))
+    print(f'Training time {total_time_str}')
 
     if args.rank in [-1, 0]:
         # plot loss and lr curve
-        if len(train_loss) != 0 and len(learning_rate) != 0:
+        if train_loss and learning_rate:
             from plot_curve import plot_loss_and_lr
             plot_loss_and_lr(train_loss, learning_rate)
 
         # plot mAP curve
-        if len(val_map) != 0:
+        if val_map:
             from plot_curve import plot_map
             plot_map(val_map)
 

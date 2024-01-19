@@ -37,10 +37,7 @@ class FasterRCNNBase(nn.Module):
     @torch.jit.unused
     def eager_outputs(self, losses, detections):
         # type: (Dict[str, Tensor], List[Dict[str, Tensor]]) -> Union[Dict[str, Tensor], List[Dict[str, Tensor]]]
-        if self.training:
-            return losses
-
-        return detections
+        return losses if self.training else detections
 
     def forward(self, images, targets=None):
         # type: (List[Tensor], Optional[List[Dict[str, Tensor]]]) -> Tuple[Dict[str, Tensor], List[Dict[str, Tensor]]]
@@ -61,17 +58,16 @@ class FasterRCNNBase(nn.Module):
 
         if self.training:
             assert targets is not None
-            for target in targets:         # 进一步判断传入的target的boxes参数是否符合规定
+            for target in targets: # 进一步判断传入的target的boxes参数是否符合规定
                 boxes = target["boxes"]
-                if isinstance(boxes, torch.Tensor):
-                    if len(boxes.shape) != 2 or boxes.shape[-1] != 4:
-                        raise ValueError("Expected target boxes to be a tensor"
-                                         "of shape [N, 4], got {:}.".format(
-                                          boxes.shape))
-                else:
+                if not isinstance(boxes, torch.Tensor):
                     raise ValueError("Expected target boxes to be of type "
                                      "Tensor, got {:}.".format(type(boxes)))
 
+                if len(boxes.shape) != 2 or boxes.shape[-1] != 4:
+                    raise ValueError("Expected target boxes to be a tensor"
+                                     "of shape [N, 4], got {:}.".format(
+                                      boxes.shape))
         original_image_sizes = torch.jit.annotate(List[Tuple[int, int]], [])
         for img in images:
             val = img.shape[-2:]
@@ -101,13 +97,12 @@ class FasterRCNNBase(nn.Module):
         losses.update(detector_losses)
         losses.update(proposal_losses)
 
-        if torch.jit.is_scripting():
-            if not self._has_warned:
-                warnings.warn("RCNN always returns a (Losses, Detections) tuple in scripting")
-                self._has_warned = True
-            return losses, detections
-        else:
+        if not torch.jit.is_scripting():
             return self.eager_outputs(losses, detections)
+        if not self._has_warned:
+            warnings.warn("RCNN always returns a (Losses, Detections) tuple in scripting")
+            self._has_warned = True
+        return losses, detections
 
         # if self.training:
         #     return losses
@@ -273,15 +268,14 @@ class FasterRCNN(FasterRCNNBase):
         assert isinstance(rpn_anchor_generator, (AnchorsGenerator, type(None)))
         assert isinstance(box_roi_pool, (MultiScaleRoIAlign, type(None)))
 
-        if num_classes is not None:
-            if box_predictor is not None:
-                raise ValueError("num_classes should be None when box_predictor "
-                                 "is specified")
-        else:
+        if num_classes is None:
             if box_predictor is None:
                 raise ValueError("num_classes should not be None when box_predictor "
                                  "is not specified")
 
+        elif box_predictor is not None:
+            raise ValueError("num_classes should be None when box_predictor "
+                             "is specified")
         # 预测特征层的channels
         out_channels = backbone.out_channels
 

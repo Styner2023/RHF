@@ -79,8 +79,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold):
     offsets = idxs.to(boxes) * (max_coordinate + 1)
     # boxes加上对应层的偏移量后，保证不同类别/层之间boxes不会有重合的现象
     boxes_for_nms = boxes + offsets[:, None]
-    keep = nms(boxes_for_nms, scores, iou_threshold)
-    return keep
+    return nms(boxes_for_nms, scores, iou_threshold)
 
 
 def remove_small_boxes(boxes, min_size):
@@ -176,6 +175,5 @@ def box_iou(boxes1, boxes2):
     wh = (rb - lt).clamp(min=0)  # [N,M,2]
     inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
 
-    iou = inter / (area1[:, None] + area2 - inter)
-    return iou
+    return inter / (area1[:, None] + area2 - inter)
 

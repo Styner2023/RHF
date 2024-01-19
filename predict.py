@@ -33,9 +33,9 @@ def create_model(num_classes):
     # resNet50+fpn+faster_RCNN
     # 注意，这里的norm_layer要和训练脚本中保持一致
     backbone = resnet50_fpn_backbone(norm_layer=torch.nn.BatchNorm2d)
-    model = FasterRCNN(backbone=backbone, num_classes=num_classes, rpn_score_thresh=0.5)
-
-    return model
+    return FasterRCNN(
+        backbone=backbone, num_classes=num_classes, rpn_score_thresh=0.5
+    )
 
 
 def time_synchronized():
@@ -46,23 +46,24 @@ def time_synchronized():
 def main():
     # get devices
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("using {} device.".format(device))
+    print(f"using {device} device.")
 
     # create model
     model = create_model(num_classes=4)
 
     # load train weights
     train_weights = "./save_weights/resNetFpn-model-19.pth"
-    assert os.path.exists(train_weights), "{} file dose not exist.".format(train_weights)
+    assert os.path.exists(train_weights), f"{train_weights} file dose not exist."
     model.load_state_dict(torch.load(train_weights, map_location=device)["model"])
     model.to(device)
 
     # read class_indict
     label_json_path = './classes.json'
-    assert os.path.exists(label_json_path), "json file {} dose not exist.".format(label_json_path)
-    json_file = open(label_json_path, 'r')
-    class_dict = json.load(json_file)
-    json_file.close()
+    assert os.path.exists(
+        label_json_path
+    ), f"json file {label_json_path} dose not exist."
+    with open(label_json_path, 'r') as json_file:
+        class_dict = json.load(json_file)
     category_index = {v: k for k, v in class_dict.items()}
 
     # load image
@@ -84,7 +85,7 @@ def main():
         t_start = time_synchronized()
         predictions = model(img.to(device))[0]
         t_end = time_synchronized()
-        print("inference+NMS time: {}".format(t_end - t_start))
+        print(f"inference+NMS time: {t_end - t_start}")
 
         predict_boxes = predictions["boxes"].to("cpu").numpy()
         predict_classes = predictions["labels"].to("cpu").numpy()

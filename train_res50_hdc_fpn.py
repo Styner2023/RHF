@@ -40,10 +40,12 @@ def main(parser_data):
     ImageFile.LOAD_TRUNCATED_IMAGES = True
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     device = torch.device(parser_data.device if torch.cuda.is_available() else "cpu")
-    print("Using {} device training.".format(device.type))
+    print(f"Using {device.type} device training.")
 
     # 用来保存coco_info的文件
-    results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    results_file = (
+        f'results{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}.txt'
+    )
 
     data_transform = {
         "train": transforms.Compose([transforms.ToTensor()]),
@@ -54,7 +56,7 @@ def main(parser_data):
     mask_root = parser_data.data_path
     # check mask data root
     if os.path.exists(os.path.join(mask_root, "")) is False:
-        raise FileNotFoundError("JPEGImages dose not in path:'{}'.".format(mask_root))
+        raise FileNotFoundError(f"JPEGImages dose not in path:'{mask_root}'.")
 
     # load train data set
     train_dataset = maskDetectionDataset(mask_root, data_transform["train"], "train.txt")
@@ -124,7 +126,7 @@ def main(parser_data):
         parser_data.start_epoch = checkpoint['epoch'] + 1
         if args.amp and "scaler" in checkpoint:
             scaler.load_state_dict(checkpoint["scaler"])
-        print("the training process from epoch{}...".format(parser_data.start_epoch))
+        print(f"the training process from epoch{parser_data.start_epoch}...")
 
     train_loss = []
     learning_rate = []
@@ -149,7 +151,7 @@ def main(parser_data):
         with open(results_file, "a") as f:
             # 写入的数据包括coco指标还有loss和learning rate
             result_info = [str(round(i, 4)) for i in coco_info + [mean_loss.item()]] + [str(round(lr, 6))]
-            txt = "epoch:{} {}".format(epoch, '  '.join(result_info))
+            txt = f"epoch:{epoch} {'  '.join(result_info)}"
             f.write(txt + "\n")
 
         val_map.append(coco_info[1])  # pascal mAP
@@ -162,15 +164,18 @@ def main(parser_data):
             'epoch': epoch}
         if args.amp:
             save_files["scaler"] = scaler.state_dict()
-        torch.save(save_files, "./save_weights/resNetHDCFpn-model-Augment-{}.pth".format(epoch))
+        torch.save(
+            save_files,
+            f"./save_weights/resNetHDCFpn-model-Augment-{epoch}.pth",
+        )
 
     # plot loss and lr curve
-    if len(train_loss) != 0 and len(learning_rate) != 0:
+    if train_loss and learning_rate:
         from plot_curve import plot_loss_and_lr
         plot_loss_and_lr(train_loss, learning_rate)
 
     # plot mAP curve
-    if len(val_map) != 0:
+    if val_map:
         from plot_curve import plot_map
         plot_map(val_map)
 

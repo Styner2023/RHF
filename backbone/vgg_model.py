@@ -65,8 +65,9 @@ cfgs = {
 
 
 def vgg(model_name="vgg16", weights_path=None):
-    assert model_name in cfgs, "Warning: model number {} not in cfgs dict!".format(model_name)
+    assert (
+        model_name in cfgs
+    ), f"Warning: model number {model_name} not in cfgs dict!"
     cfg = cfgs[model_name]
 
-    model = VGG(make_features(cfg), weights_path=weights_path)
-    return model
+    return VGG(make_features(cfg), weights_path=weights_path)

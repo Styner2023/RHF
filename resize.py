@@ -17,10 +17,10 @@ xmllist = os.listdir(XML_INPUT_PATH)
 
 for i in tqdm(range(len(imglist))):
     # 每个图像全路径
-    image_input_fullname = IMAGE_INPUT_PATH + '/' + imglist[i]
-    xml_input_fullname = XML_INPUT_PATH + '/' + xmllist[i]
-    image_output_fullname = IMAGE_OUTPUT_PATH + '/' + imglist[i]
-    xml_output_fullname = XML_OUTPUT_PATH + '/' + xmllist[i]
+    image_input_fullname = f'{IMAGE_INPUT_PATH}/{imglist[i]}'
+    xml_input_fullname = f'{XML_INPUT_PATH}/{xmllist[i]}'
+    image_output_fullname = f'{IMAGE_OUTPUT_PATH}/{imglist[i]}'
+    xml_output_fullname = f'{XML_OUTPUT_PATH}/{xmllist[i]}'
 
     img = cv2.imread(image_input_fullname)
     height, width = img.shape[:2]

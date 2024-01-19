@@ -23,7 +23,7 @@ def plot_loss_and_lr(train_loss, learning_rate, name):
         plt.legend(handles1 + handles2, labels1 + labels2, loc='upper right')
 
         fig.subplots_adjust(right=0.8)  # 防止出现保存图片显示不全的情况
-        fig.savefig('./loss_and_lr{}.png'.format(name))
+        fig.savefig(f'./loss_and_lr{name}.png')
         plt.close()
         print("successful save loss curve! ")
     except Exception as e:
@@ -39,7 +39,7 @@ def plot_map(mAP, name):
         plt.title('Eval mAP')
         plt.xlim(0, len(mAP))
         plt.legend(loc='best')
-        plt.savefig('./mAP{}.png'.format(name))
+        plt.savefig(f'./mAP{name}.png')
         plt.close()
         print("successful save mAP curve!")
     except Exception as e:
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     lr_list = []
     mAP_list = []
     results = open(results_path)
-    for line in results.readlines():
+    for line in results:
         mAP_list.append(float(line.split(' ')[3]))
         loss_list.append(float(line.split(' ')[-3]))
         lr_list.append(float(line.split(' ')[-1][:-1]))

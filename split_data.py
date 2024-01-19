@@ -7,7 +7,7 @@ def main():
 
     # files_path = "./MaskDatasets/Annotations"
     files_path = "./CMFD/JPEGImages"
-    assert os.path.exists(files_path), "path: '{}' does not exist.".format(files_path)
+    assert os.path.exists(files_path), f"path: '{files_path}' does not exist."
 
     val_rate = 0.3
 
